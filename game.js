@@ -5,6 +5,100 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+// Audio System
+let audioCtx = null;
+
+function initAudio() {
+    if (audioCtx) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+
+function playSound(type) {
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    const now = audioCtx.currentTime;
+
+    switch(type) {
+        case 'shoot':
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(440, now);
+            osc.frequency.exponentialRampToValueAtTime(110, now + 0.1);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.start(now);
+            osc.stop(now + 0.1);
+            break;
+        case 'explosion':
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(100, now);
+            osc.frequency.exponentialRampToValueAtTime(40, now + 0.3);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.linearRampToValueAtTime(0, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.3);
+            break;
+        case 'powerup':
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(440, now);
+            osc.frequency.exponentialRampToValueAtTime(880, now + 0.2);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.linearRampToValueAtTime(0, now + 0.2);
+            osc.start(now);
+            osc.stop(now + 0.2);
+            break;
+        case 'hit':
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(200, now);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.linearRampToValueAtTime(0, now + 0.05);
+            osc.start(now);
+            osc.stop(now + 0.05);
+            break;
+    }
+}
+
+let bgmOsc = null;
+let bgmGain = null;
+let bgmStep = 0;
+const bgmNotes = [110, 123, 130, 146, 164, 174, 196, 220];
+
+function playBGM() {
+    if (!audioCtx) return;
+    if (bgmOsc) return;
+
+    const tick = () => {
+        if (!state.running || state.gameOver) {
+            if (bgmOsc) {
+                bgmOsc.stop();
+                bgmOsc = null;
+            }
+            return;
+        }
+
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.connect(g);
+        g.connect(audioCtx.destination);
+
+        const note = bgmNotes[bgmStep % bgmNotes.length];
+        osc.frequency.setValueAtTime(note, audioCtx.currentTime);
+        g.gain.setValueAtTime(0.05, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.2);
+
+        bgmStep++;
+        setTimeout(tick, 200);
+    };
+
+    tick();
+}
+
 canvas.width = 800;
 canvas.height = 600;
 
@@ -98,6 +192,8 @@ window.addEventListener('keydown', (e) => {
     state.keys[e.code] = true;
     if (e.code === 'Space') {
         if (!state.running && !state.gameOver) {
+            initAudio();
+            playBGM();
             state.running = true;
             document.getElementById('menu').classList.add('hidden');
         } else if (state.gameOver) {
@@ -130,6 +226,7 @@ function createExplosion(x, y, color) {
 
 function endGame(win = false) {
     state.gameOver = true;
+    if (win) playSound('powerup');
     const goMenu = document.getElementById('game-over');
     goMenu.classList.remove('hidden');
     goMenu.querySelector('h1').innerText = win ? 'MISSION ACCOMPLISHED' : 'GAME OVER';
@@ -150,6 +247,7 @@ function spawnPowerup(x, y) {
 
 function applyPowerup(type) {
     state.score += 500;
+    playSound('powerup');
     switch(type) {
         case 'speed':
             state.player.speedLevel = Math.min(state.player.speedLevel + 1, 5);
@@ -177,10 +275,12 @@ function playerHit() {
     if (state.player.shield > 0) {
         state.player.shield--;
         state.player.invincible = 60;
+        playSound('hit');
         return;
     }
 
     state.lives--;
+    playSound('explosion');
     createExplosion(state.player.x, state.player.y, '#0ff');
     if (state.lives <= 0) {
         endGame();
@@ -260,6 +360,7 @@ function update() {
     // Player Firing (Autofire)
     if (state.player.fireCooldown > 0) state.player.fireCooldown--;
     if (state.player.fireCooldown === 0) {
+        playSound('shoot');
         const fire = (x, y) => {
             state.bullets.push({
                 x: x + 32,
@@ -349,12 +450,14 @@ function update() {
         state.bullets = state.bullets.filter(bullet => {
             if (checkCollision(bullet, state.boss)) {
                 state.boss.health--;
+                playSound('hit');
                 return false;
             }
             return true;
         });
 
         if (state.boss.health <= 0) {
+            playSound('explosion');
             createExplosion(state.boss.x + state.boss.width/2, state.boss.y + state.boss.height/2, '#f0f');
             state.score += 10000;
             state.boss = null;
@@ -396,6 +499,7 @@ function update() {
         }
 
         if (enemy.health <= 0) {
+            playSound('explosion');
             createExplosion(enemy.x, enemy.y, '#f00');
             state.score += 100;
             if (Math.random() > 0.8) spawnPowerup(enemy.x, enemy.y);
