@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Procedural Shooting Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div id="ui-layer">
+            <div id="hud">
+                <div id="score">Score: 0</div>
+                <div id="lives">Lives: 3</div>
+                <div id="powerups">
+                    <span id="p-speed">SPD</span>
+                    <span id="p-option">OPT</span>
+                    <span id="p-laser">LSR</span>
+                    <span id="p-shield">SHD</span>
+                </div>
+            </div>
+            <div id="menu" class="overlay">
+                <h1>AI SHOOTER</h1>
+                <p>Press [SPACE] to Start</p>
+                <div class="controls">
+                    [WASD] Move | [SPACE] Shoot
+                </div>
+            </div>
+            <div id="game-over" class="overlay hidden">
+                <h1>GAME OVER</h1>
+                <p id="final-score">Score: 0</p>
+                <p style="margin-top: 20px; font-size: 20px; color: #ff0;">Press [SPACE] to Restart</p>
+            </div>
+        </div>
+    </div>
+    <script src="game.js"></script>
+</body>
+</html>
