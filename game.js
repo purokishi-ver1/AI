@@ -257,9 +257,9 @@ function update() {
     state.player.posHistory.unshift({x: state.player.x, y: state.player.y});
     if (state.player.posHistory.length > 100) state.player.posHistory.pop();
 
-    // Player Firing
+    // Player Firing (Autofire)
     if (state.player.fireCooldown > 0) state.player.fireCooldown--;
-    if (state.keys['Space'] && state.player.fireCooldown === 0) {
+    if (state.player.fireCooldown === 0) {
         const fire = (x, y) => {
             state.bullets.push({
                 x: x + 32,
