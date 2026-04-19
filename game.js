@@ -21,14 +21,15 @@ function playSound(type) {
     gain.connect(audioCtx.destination);
 
     const now = audioCtx.currentTime;
+    const vol = state.volume;
 
     switch(type) {
         case 'shoot':
             osc.type = 'square';
             osc.frequency.setValueAtTime(440, now);
             osc.frequency.exponentialRampToValueAtTime(110, now + 0.1);
-            gain.gain.setValueAtTime(0.1, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            gain.gain.setValueAtTime(0.1 * vol, now);
+            gain.gain.exponentialRampToValueAtTime(0.01 * vol, now + 0.1);
             osc.start(now);
             osc.stop(now + 0.1);
             break;
@@ -36,7 +37,7 @@ function playSound(type) {
             osc.type = 'sawtooth';
             osc.frequency.setValueAtTime(100, now);
             osc.frequency.exponentialRampToValueAtTime(40, now + 0.3);
-            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.setValueAtTime(0.2 * vol, now);
             gain.gain.linearRampToValueAtTime(0, now + 0.3);
             osc.start(now);
             osc.stop(now + 0.3);
@@ -45,7 +46,7 @@ function playSound(type) {
             osc.type = 'sine';
             osc.frequency.setValueAtTime(440, now);
             osc.frequency.exponentialRampToValueAtTime(880, now + 0.2);
-            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.setValueAtTime(0.1 * vol, now);
             gain.gain.linearRampToValueAtTime(0, now + 0.2);
             osc.start(now);
             osc.stop(now + 0.2);
@@ -53,7 +54,7 @@ function playSound(type) {
         case 'hit':
             osc.type = 'triangle';
             osc.frequency.setValueAtTime(200, now);
-            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.setValueAtTime(0.1 * vol, now);
             gain.gain.linearRampToValueAtTime(0, now + 0.05);
             osc.start(now);
             osc.stop(now + 0.05);
@@ -86,7 +87,7 @@ function playBGM() {
 
         const note = bgmNotes[bgmStep % bgmNotes.length];
         osc.frequency.setValueAtTime(note, audioCtx.currentTime);
-        g.gain.setValueAtTime(0.05, audioCtx.currentTime);
+        g.gain.setValueAtTime(0.05 * state.volume, audioCtx.currentTime);
         g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
 
         osc.start();
@@ -146,9 +147,11 @@ function generateSprite(width, height, type = 'enemy') {
 // Game State
 const state = {
     running: false,
+    paused: false,
     gameOver: false,
     score: 0,
     lives: 3,
+    volume: 0.5,
     time: 0,
     keys: {},
     player: {
@@ -200,9 +203,24 @@ window.addEventListener('keydown', (e) => {
             location.reload();
         }
     }
+    if (e.code === 'Escape' && state.running && !state.gameOver) {
+        state.paused = !state.paused;
+        if (state.paused) {
+            document.getElementById('pause-menu').classList.remove('hidden');
+        } else {
+            document.getElementById('pause-menu').classList.add('hidden');
+        }
+    }
 });
 window.addEventListener('keyup', (e) => {
     state.keys[e.code] = false;
+});
+
+// UI Event Listeners
+document.getElementById('volume-control').addEventListener('input', (e) => {
+    const val = e.target.value;
+    state.volume = val / 100;
+    document.getElementById('volume-value').innerText = `${val}%`;
 });
 
 function checkCollision(rect1, rect2) {
@@ -321,7 +339,7 @@ function spawnBoss() {
 }
 
 function update() {
-    if (!state.running || state.gameOver) return;
+    if (!state.running || state.gameOver || state.paused) return;
 
     state.time++;
     if (state.player.invincible > 0) state.player.invincible--;

@@ -32,6 +32,15 @@
                 <p id="final-score">Score: 0</p>
                 <p style="margin-top: 20px; font-size: 20px; color: #ff0;">Press [SPACE] to Restart</p>
             </div>
+            <div id="pause-menu" class="overlay hidden">
+                <h1>PAUSED</h1>
+                <div class="options-panel">
+                    <label for="volume-control">VOLUME</label>
+                    <input type="range" id="volume-control" min="0" max="100" value="50">
+                    <span id="volume-value">50%</span>
+                </div>
+                <p style="margin-top: 20px;">Press [ESC] to Resume</p>
+            </div>
         </div>
     </div>
     <script src="game.js"></script>
